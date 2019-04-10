@@ -1,1 +1,3 @@
 keys.yml
+/login*.sh
+*.retry
