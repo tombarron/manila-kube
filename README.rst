@@ -37,7 +37,8 @@ Prerequisites
 
 We assume that you have credentials to use RDOCloud and that
 you have set them up in ${HOME}/.config/openstack/clouds.yaml
-along the following lines:
+along the following lines. You can copy the clouds.yaml.sample
+into ~/.config/openstack/clouds.yaml and make necessary changes.
 
 ::
 
