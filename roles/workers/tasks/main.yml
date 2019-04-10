@@ -1,0 +1,10 @@
+- name: join with master
+  command: kubeadm join --ignore-preflight-errors=cri --discovery-token-unsafe-skip-ca-verification --token={{ kubernetes_token }} {{ hostvars[groups['master'][0]].ansible_default_ipv4.address }}:6443
+  args:
+    creates: /etc/kubernetes/bootstrap-kubelet.conf
+
+- name: iptables open ports
+  command: iptables -A INPUT -p tcp -m state --state NEW -m multiport --dports 9000:9200 -j ACCEPT
+
+- name: save iptables
+  command: service iptables save

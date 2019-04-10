@@ -1,0 +1,7 @@
+---
+# Set the name of the key known to the OpenStack cloud.
+key_name: devstack_keypair
+# Set the name of the local private key file associated
+# with the named key.
+private_key_file: "/path/to/your/private/key"
+public_key_file: "/path/to/your/public/key"
