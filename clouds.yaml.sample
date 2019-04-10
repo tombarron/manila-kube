@@ -5,4 +5,4 @@ clouds:
       project_name: <your-project-name>
       username: <your-user-name>
       password: <your-password>
-      region: RegionOne
+    region: RegionOne
