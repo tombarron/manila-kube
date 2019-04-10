@@ -46,8 +46,10 @@ into ~/.config/openstack/clouds.yaml and make necessary changes.
   clouds:
     rdo-cloud:
         auth:
-            auth_url: https://phx2.cloud.rdoproject.org:13000/
+            auth_url: https://phx2.cloud.rdoproject.org:13000/v3
             project_name: <your-project-name>
+            user_domain_name: Default
+            project_domain_name: Default
             username: <your-user-name>
             password: <your-password>
         region: RegionOne
