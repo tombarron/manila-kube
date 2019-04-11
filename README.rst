@@ -37,7 +37,8 @@ Prerequisites
 
 We assume that you have credentials to use RDOCloud and that
 you have set them up in ${HOME}/.config/openstack/clouds.yaml
-along the following lines:
+along the following lines. You can copy the clouds.yaml.sample
+into ~/.config/openstack/clouds.yaml and make necessary changes.
 
 ::
 
@@ -45,8 +46,10 @@ along the following lines:
   clouds:
     rdo-cloud:
         auth:
-            auth_url: https://phx2.cloud.rdoproject.org:13000/
+            auth_url: https://phx2.cloud.rdoproject.org:13000/v3
             project_name: <your-project-name>
+            user_domain_name: Default
+            project_domain_name: Default
             username: <your-user-name>
             password: <your-password>
         region: RegionOne

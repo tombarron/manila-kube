@@ -1,3 +1,3 @@
 #!/bin/bash
 
-ssh -X -i ~/.ssh/id_rsa centos@{{ worker0.server.public_v4 }}
+ssh -X -i {{ private_key_file }} centos@{{ worker0.server.public_v4 }}
