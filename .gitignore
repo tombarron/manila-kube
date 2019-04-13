@@ -1,3 +1,5 @@
 keys.yml
 /login*.sh
 *.retry
+kubeconfig.conf
+.venv
