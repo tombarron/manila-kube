@@ -1,14 +1,27 @@
 - name: initialize kubeadm on master
-  command: kubeadm init --pod-network-cidr=10.244.0.0/16 --token={{ kubernetes_token }} --apiserver-advertise-address={{ ansible_default_ipv4.address }}
+  shell: |
+    kubeadm init --pod-network-cidr=10.244.0.0/16 \
+        --token={{kubernetes_token }} \
+        --apiserver-advertise-address={{ ansible_default_ipv4.address }} \
+        --apiserver-cert-extra-sans={{ inventory_hostname }}
   args:
     creates: /etc/kubernetes/manifests/kube-apiserver.yaml
 
 - name: create flannel network
   shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
 
-- name: get kubeconfig.conf
+- name: get kubeconfig.conf from the master node
   fetch:
     src: /etc/kubernetes/admin.conf
     dest: kubeconfig.conf
     flat: yes
+
+- name: replace the master node's internal/host network IP with floating IP
+  delegate_to: localhost
+  become: no
+  replace:
+    path: '{{ playbook_dir }}/kubeconfig.conf'
+    after: 'server:'
+    regexp: 'https://[0-9.]+:6443'
+    replace: "https://{{ inventory_hostname }}:6443"
 
