@@ -1,10 +1,36 @@
+- name: create a custom security group
+  os_security_group:
+    state: present
+    name: manila-kube-security-group
+    description: Security group with ingress to ports 22, 80, 443, 6443
 - name: add ssh ingress rule
   os_security_group_rule:
     state: present
-    security_group: default
+    security_group: manila-kube-security-group
     protocol: tcp
     port_range_min: 22
     port_range_max: 22
+- name: add http ingress rule
+  os_security_group_rule:
+    state: present
+    security_group: manila-kube-security-group
+    protocol: tcp
+    port_range_min: 80
+    port_range_max: 80
+- name: add https ingress rule
+  os_security_group_rule:
+    state: present
+    security_group: manila-kube-security-group
+    protocol: tcp
+    port_range_min: 443
+    port_range_max: 443
+- name: add ingress rule to kubernetes secure port
+  os_security_group_rule:
+    state: present
+    security_group: manila-kube-security-group
+    protocol: tcp
+    port_range_min: 6443
+    port_range_max: 6443
 - name: create keypair
   os_keypair:
     state: present
@@ -34,6 +60,7 @@
     wait: yes
     auto_ip: yes
     image: 'CentOS-7-x86_64-GenericCloud-1708'
+    security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
     network: host-VM-private-net
@@ -56,6 +83,7 @@
     wait: yes
     auto_ip: yes
     image: 'CentOS-7-x86_64-GenericCloud-1708'
+    security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
     network: host-VM-private-net
@@ -76,6 +104,7 @@
     wait: yes
     auto_ip: yes
     image: 'CentOS-7-x86_64-GenericCloud-1708'
+    security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
     network: host-VM-private-net
@@ -96,6 +125,7 @@
     wait: yes
     auto_ip: yes
     image: 'CentOS-7-x86_64-GenericCloud-1708'
+    security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
     network: host-VM-private-net
