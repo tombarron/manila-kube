@@ -33,42 +33,48 @@
     gpgcheck: yes
 
 - name: install utility programs
-  yum: name={{ item }} state=present disable_gpg_check=yes
-  with_items:
-    - wget
-    - ntp
-    - screen
-    - epel-release
-    - vim
-    - iptables
-    - iptables-utils
-    - iptables-services
-    - ncurses-term
-    - kubelet
-    - kubeadm
-    - kubectl
-    - kernel-devel
-    - kernel-headers
+  yum:
+    disable_gpg_check: yes
+    state: present
+    name:
+      - wget
+      - ntp
+      - screen
+      - epel-release
+      - vim
+      - iptables
+      - iptables-utils
+      - iptables-services
+      - ncurses-term
+      - kubelet
+      - kubeadm
+      - kubectl
+      - kernel-devel
+      - kernel-headers
 
-- name: install epel  utility programs
-  yum: name={{ item }} state=present disable_gpg_check=yes
-  with_items:
-    - jq
-    - lvm2
-    - yum-utils
-    - device-mapper-persistent-data
+- name: install epel utility programs
+  yum:
+    state: present
+    disable_gpg_check: yes
+    name:
+      - jq
+      - lvm2
+      - yum-utils
+      - device-mapper-persistent-data
 
-- name: remove all old docker
-  yum: name={{ item }} state=removed disable_gpg_check=yes
-  with_items:
-    - docker
-    - docker-client
-    - docker-client-latest
-    - docker-common
-    - docker-latest
-    - docker-latest-logrotate
-    - docker-logrotate
-    - docker-engine
+- name: remove all old docker packages
+  yum:
+    state: removed
+    disable_gpg_check: yes
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
 
 - name: install docker ce yum repo
   command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
