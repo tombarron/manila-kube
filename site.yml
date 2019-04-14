@@ -1,4 +1,5 @@
 - hosts: localhost
+  gather_facts: false
   connection: local
   vars:
     ansible_python_interpreter: "/usr/bin/env python3"
@@ -8,6 +9,7 @@
     - openstack_infra
 
 - hosts: cluster
+  gather_facts: false
   become: yes
   become_method: sudo
   vars_files:

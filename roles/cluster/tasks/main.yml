@@ -1,3 +1,16 @@
+- name: Wait for instances to finish booting
+  connection: local
+  wait_for:
+    host="{{ansible_ssh_host|default(inventory_hostname)}}"
+    search_regex=OpenSSH
+    port=22
+    delay=30
+    timeout=600
+
+- name: Gather facts now that we know the instances are ready
+  setup:
+    filter: "ansible_*"
+
 #- name: debug stuff
 #  vars:
 #    msg: |
@@ -6,7 +19,7 @@
 #           {{ hostvars | to_nice_json }}
 #  debug:
 #    msg: "{{ msg.split('\n') }}"
-#
+
 - name: build hosts file
   lineinfile: dest=/etc/hosts regexp='^{{ hostvars[item].ansible_default_ipv4.address }}.*$' line="{{ hostvars[item].ansible_default_ipv4.address }} {{ hostvars[item].ansible_hostname }} {{ hostvars[item].ansible_nodename }}" state=present
   when: hostvars[item].ansible_default_ipv4.address is defined
