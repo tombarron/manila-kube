@@ -5,7 +5,7 @@
   vars_files:
     - keys.yml
   roles:
-    - local
+    - openstack_infra
 
 - hosts: cluster
   become: yes
