@@ -65,8 +65,6 @@
     key_name: "{{ key_name }}"
     network: host-VM-private-net
   register: master
-- debug:
-    var: master.server.public_v4
 - name: add the master to our ansible inventory
   add_host: hostname="{{ master.server.public_v4 }}"
             groups=cluster,master
