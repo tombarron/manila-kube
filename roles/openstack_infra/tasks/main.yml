@@ -36,22 +36,22 @@
     state: present
     name: "{{ key_name }}"
     public_key_file: "{{ public_key_file }}"
-- name: create private network for the host VM
+- name: create private network for the cluster
   os_network:
     state: present
-    name: host-VM-private-net
+    name: manila-kube-private-net
 - name: create private subnet on that network
   os_subnet:
     state: present
-    network_name: host-VM-private-net
-    name: host-VM-private-subnet
+    network_name: manila-kube-private-net
+    name: manila-kube-private-subnet
     cidr: 192.168.0.0/24
     gateway_ip: 192.168.0.1
 - name: create router for the private network
   os_router:
     state: present
-    name: host-VM-private-router
-    interfaces: host-VM-private-subnet
+    name: manila-kube-private-router
+    interfaces: manila-kube-private-subnet
     network: 38.145.32.0/22
 - name: launch master node
   os_server:
@@ -63,7 +63,7 @@
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
-    network: host-VM-private-net
+    network: manila-kube-private-net
   register: master
 - name: add the master to our ansible inventory
   add_host: hostname="{{ master.server.public_v4 }}"
@@ -84,7 +84,7 @@
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
-    network: host-VM-private-net
+    network: manila-kube-private-net
   register: worker0
 - name: add worker0 to our ansible inventory
   add_host: hostname="{{ worker0.server.public_v4 }}"
@@ -105,7 +105,7 @@
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
-    network: host-VM-private-net
+    network: manila-kube-private-net
   register: worker1
 - name: add worker1 to our ansible inventory
   add_host: hostname="{{ worker1.server.public_v4 }}"
@@ -126,7 +126,7 @@
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
-    network: host-VM-private-net
+    network: manila-kube-private-net
   register: worker2
 - name: add worker2 our ansible inventory
   add_host: hostname="{{ worker2.server.public_v4 }}"
