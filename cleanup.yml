@@ -1,0 +1,10 @@
+---
+# This playbook performs service cleanup
+#
+
+- hosts: localhost
+  connection: local
+  vars_files:
+    - keys.yml
+  tasks:
+    - include: roles/openstack_infra/tasks/cleanup.yml
