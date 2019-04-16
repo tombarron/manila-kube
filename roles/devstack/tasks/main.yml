@@ -26,4 +26,9 @@
   package:
     name: python-setuptools
     state: absent
+- name: run stack.sh to deploy manila
+  command: ./stack.sh
+  args:
+    chdir: /home/centos/devstack
+    creates: /opt/stack/manila
 
