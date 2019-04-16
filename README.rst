@@ -78,6 +78,9 @@ the number of worker nodes by editing roles/local/tasks/main.yml.
 Playbooks
 =========
 
+Deploy
+------
+
 Now you can run the playbook::
 
 $ ansible-playbook site.yml
@@ -100,4 +103,15 @@ If you want to run more OpenStack services or run with other back ends
 you can edit roles/devstack/files/local.conf before running the playbook.
 
 
+Cleanup
+-------
 
+If you need to start over and you need to clean your environment, you
+can use the cleanup.yml playbook.
+
+Just run::
+
+$ ansible-playbook cleanup.yml
+
+This playbook will remove the created instances, the security group
+and the network resources that were allocated.

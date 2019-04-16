@@ -1,0 +1,45 @@
+- name: delete master node
+  os_server:
+    name: master
+    state: absent
+    wait: yes
+- name: delete worker0
+  os_server:
+    name: worker0
+    state: absent
+    wait: yes
+- name: delete worker1
+  os_server:
+    name: worker1
+    state: absent
+    wait: yes
+- name: delete worker2
+  os_server:
+    name: worker2
+    state: absent
+    wait: yes
+- name: delete custom security group
+  os_security_group:
+    state: absent
+    name: manila-kube-security-group
+- name: delete router for the private network
+  os_router:
+    state: absent
+    name: manila-kube-private-router
+- name: delete private subnet for the private network
+  os_subnet:
+    state: absent
+    name: manila-kube-private-subnet
+- name: delete private network for the host VM
+  os_network:
+    state: absent
+    name: manila-kube-private-net
+- name: delete local login scripts
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - "login-master.sh"
+    - "login-worker0.sh"
+    - "login-worker1.sh"
+    - "login-worker2.sh"
