@@ -21,8 +21,10 @@
         mode=0644
         owner={{ansible_env.USER}}
 # The CentOS python-setuptools is too old
+# for devstack and it will use its own version
+# of setuptools
 - name: uninstall OS python-setuptools
-  become: yes
+  become: true
   package:
     name: python-setuptools
     state: absent
@@ -31,4 +33,11 @@
   args:
     chdir: /home/centos/devstack
     creates: /opt/stack/manila
-
+# But we need a system-wide setuptools for
+# python-manilclient pbr to work so re-install
+# it now that devstack stack.sh has completed
+- name: Re-install OS python-setuptools
+  become: true
+  package:
+    name: python-setuptools
+    state: present
