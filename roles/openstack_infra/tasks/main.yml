@@ -31,6 +31,20 @@
     protocol: tcp
     port_range_min: 6443
     port_range_max: 6443
+- name: allow icmp on the private cluster network
+  os_security_group_rule:
+    state: present
+    security_group: manila-kube-security-group
+    protocol: icmp
+    remote_ip_prefix: 192.168.0.0/24
+- name: allow unrestricted TCP on the private cluster network
+  os_security_group_rule:
+    state: present
+    security_group: manila-kube-security-group
+    protocol: tcp
+    port_range_min: 1
+    port_range_max: 65535
+    remote_ip_prefix: 192.168.0.0/24
 - name: create keypair
   os_keypair:
     state: present
