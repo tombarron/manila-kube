@@ -1,0 +1,8 @@
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+  tasks:
+    - name: Install ansible-galaxy roles locally
+      command: ansible-galaxy install -r ../../requirements.yml --roles-path ../../roles

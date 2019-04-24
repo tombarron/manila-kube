@@ -1,2 +1,4 @@
 ---
 kubernetes_token: abcdef.1234567890abcdef
+golang_version: 1.12.2
+golang_gopath: $HOME/go

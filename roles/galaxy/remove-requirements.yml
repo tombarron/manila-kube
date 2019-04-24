@@ -1,0 +1,5 @@
+- name:
+  command: ansible-galaxy remove {{ item.src }} --roles-path roles
+  with_items: "{{ lookup('file','requirements.yml') | from_yaml }}"
+  when: item.src is defined
+
