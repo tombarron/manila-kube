@@ -25,9 +25,10 @@
     state: directory
 
 - name: check if docker cephfs image exists
-  command: >
-     echo `docker images quay.io/cephcsi/cephfsplugin:v1.0.0` | grep -v grep | grep -w quay.io/cephcsi/cephfsplugin | grep -w v1.0.0
-  register: check_cephfs_image_is_not_present
+  become: no
+  command: docker image inspect quay.io/cephcsi/cephfsplugin:v1.0.0
+  register: docker_cephfs_image_exists
+  ignore_errors: yes
 
 - name: make the cephfs image and push it to the local registry
   become: no
@@ -37,9 +38,10 @@
     cd /home/centos/go/src/github.com/ceph/ceph-csi
     git checkout master
     make image-cephfsplugin
-  when: check_cephfs_image_is_not_present | bool
+  when: docker_cephfs_image_exists is failed
 
 - name: check if openstack-cloud-provider repository has been cloned
+  become: no
   stat:
     path: /home/centos/go/src/k8s.io/cloud-provider-openstack
   register: cloud_provider_openstack_repo
@@ -54,9 +56,10 @@
   when: not (cloud_provider_openstack_repo.stat.exists and cloud_provider_openstack_repo.stat.isdir)
 
 - name: check if docker manila-csi image exists
-  command: >
-     echo `docker images k8scloudprovider/manila-csi-plugin` | grep -v grep | grep -w k8scloudprovider/manila-csi-plugin
-  register: check_manila_csi_image_is_not_present
+  become: no
+  command: docker image inspect k8scloudprovider/manila-csi-plugin
+  register: docker_manila_csi_image_exists
+  ignore_errors: yes
 
 - name: make the manila-csi image and push it to the local registry
   become: no
@@ -67,7 +70,7 @@
     curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
     cd /home/centos/go/src/k8s.io/cloud-provider-openstack
     make image-manila-csi-plugin
-  when: check_manila_csi_image_is_not_present | bool
+  when: docker_manila_csi_image_exists is failed
 
 - name: initialize kubeadm on master
   shell: |
