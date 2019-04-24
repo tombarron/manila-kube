@@ -1,5 +1,6 @@
 - name: Wait for instances to finish booting
   connection: local
+  become: no
   wait_for:
     host="{{ansible_ssh_host|default(inventory_hostname)}}"
     search_regex=OpenSSH
