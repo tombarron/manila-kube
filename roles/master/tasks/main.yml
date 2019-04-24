@@ -1,3 +1,74 @@
+- name: add Mercurial yum repo
+  yum_repository:
+    name: mercurial.selenic.com
+    description: Mercurial
+    baseurl: https://www.mercurial-scm.org/release/centos7/
+    gpgcheck: no
+
+- name: install dev programs to compile cloud-provider-openstack
+  yum:
+    disable_gpg_check: yes
+    state: present
+    name:
+      - git
+      - python-devel
+      - gcc
+      - gcc-c++
+      - kernel-devel
+      - mercurial
+      - python-pip
+
+- name: ensure go module source directories exist
+  become: no
+  file:
+    path: /home/centos/go/src
+    state: directory
+
+- name: check if docker cephfs image exists
+  command: >
+     echo `docker images quay.io/cephcsi/cephfsplugin:v1.0.0` | grep -v grep | grep -w quay.io/cephcsi/cephfsplugin | grep -w v1.0.0
+  register: check_cephfs_image_is_not_present
+
+- name: make the cephfs image and push it to the local registry
+  become: no
+  shell: |
+    source /etc/profile.d/golang.sh
+    go get -d github.com/ceph/ceph-csi
+    cd /home/centos/go/src/github.com/ceph/ceph-csi
+    git checkout master
+    make image-cephfsplugin
+  when: check_cephfs_image_is_not_present | bool
+
+- name: check if openstack-cloud-provider repository has been cloned
+  stat:
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack
+  register: cloud_provider_openstack_repo
+
+- name: get the openstack-cloud-provider repository
+  become: no
+  git:
+    repo: 'https://github.com/kubernetes/cloud-provider-openstack'
+    dest: /home/centos/go/src/k8s.io/cloud-provider-openstack
+    refspec: '+refs/pull/*:refs/heads/*'
+    version: 536/head
+  when: not (cloud_provider_openstack_repo.stat.exists and cloud_provider_openstack_repo.stat.isdir)
+
+- name: check if docker manila-csi image exists
+  command: >
+     echo `docker images k8scloudprovider/manila-csi-plugin` | grep -v grep | grep -w k8scloudprovider/manila-csi-plugin
+  register: check_manila_csi_image_is_not_present
+
+- name: make the manila-csi image and push it to the local registry
+  become: no
+  shell: |
+    cd /home/centos/
+    source /etc/profile.d/golang.sh
+    # Install the go dependency management tool
+    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+    cd /home/centos/go/src/k8s.io/cloud-provider-openstack
+    make image-manila-csi-plugin
+  when: check_manila_csi_image_is_not_present | bool
+
 - name: initialize kubeadm on master
   shell: |
     kubeadm init --pod-network-cidr=10.244.0.0/16 \
@@ -24,4 +95,3 @@
     after: 'server:'
     regexp: 'https://[0-9.]+:6443'
     replace: "https://{{ inventory_hostname }}:6443"
-
