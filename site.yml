@@ -23,6 +23,7 @@
   vars_files:
     - "global_vars.yml"
   roles:
+    - gantsign.golang
     - master
   environment:
     KUBECONFIG: '/etc/kubernetes/admin.conf'

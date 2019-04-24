@@ -8,3 +8,4 @@
     - keys.yml
   tasks:
     - include: roles/openstack_infra/tasks/cleanup.yml
+    - include: roles/galaxy/remove-requirements.yml
