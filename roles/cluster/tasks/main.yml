@@ -1,5 +1,6 @@
 - name: Wait for instances to finish booting
   connection: local
+  become: no
   wait_for:
     host="{{ansible_ssh_host|default(inventory_hostname)}}"
     search_regex=OpenSSH
@@ -101,6 +102,15 @@
     - docker
     - ntpd
     - kubelet
+
+- name: add centos to docker group
+  user:
+    name: centos
+    append: yes
+    groups: docker
+
+- name: reset ssh connection for the group addition to take effect
+  meta: reset_connection
 
 - name: download crictl
   get_url:
