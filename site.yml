@@ -10,16 +10,12 @@
 
 - hosts: cluster
   gather_facts: false
-  become: yes
-  become_method: sudo
   vars_files:
     - "global_vars.yml"
   roles:
     - cluster
 
 - hosts: master
-  become: yes
-  become_method: sudo
   vars_files:
     - "global_vars.yml"
   roles:
@@ -29,8 +25,6 @@
     KUBECONFIG: '/etc/kubernetes/admin.conf'
 
 - hosts: workers
-  become: yes
-  become_method: sudo
   vars_files:
     - "global_vars.yml"
   roles:
