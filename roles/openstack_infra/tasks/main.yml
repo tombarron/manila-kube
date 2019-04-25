@@ -62,6 +62,7 @@
   os_network:
     state: present
     name: manila-kube-private-net
+    port_security_enabled: yes
 
 - name: create private subnet on that network
   os_subnet:

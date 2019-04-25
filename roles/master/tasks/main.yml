@@ -1,71 +1,3 @@
-- name: add Mercurial yum repo
-  become: yes
-  yum_repository:
-    name: mercurial.selenic.com
-    description: Mercurial
-    baseurl: https://www.mercurial-scm.org/release/centos7/
-    gpgcheck: no
-
-- name: install dev programs to compile cloud-provider-openstack
-  become: yes
-  yum:
-    disable_gpg_check: yes
-    state: present
-    name:
-      - git
-      - python-devel
-      - gcc
-      - gcc-c++
-      - kernel-devel
-      - mercurial
-      - python-pip
-
-- name: ensure go module source directories exist
-  file:
-    path: /home/centos/go/src
-    state: directory
-
-- name: check if docker cephfs image exists
-  command: docker image inspect quay.io/cephcsi/cephfsplugin:v1.0.0
-  register: docker_cephfs_image_exists
-  ignore_errors: yes
-
-- name: make the cephfs image and push it to the local registry
-  shell: |
-    source /etc/profile.d/golang.sh
-    go get -d github.com/ceph/ceph-csi
-    cd /home/centos/go/src/github.com/ceph/ceph-csi
-    git checkout master
-    make image-cephfsplugin
-  when: docker_cephfs_image_exists is failed
-
-- name: check if openstack-cloud-provider repository has been cloned
-  stat:
-    path: /home/centos/go/src/k8s.io/cloud-provider-openstack
-  register: cloud_provider_openstack_repo
-
-- name: get the openstack-cloud-provider repository
-  git:
-    repo: 'https://github.com/kubernetes/cloud-provider-openstack'
-    dest: /home/centos/go/src/k8s.io/cloud-provider-openstack
-    refspec: '+refs/pull/*:refs/heads/*'
-    version: 536/head
-  when: not (cloud_provider_openstack_repo.stat.exists and cloud_provider_openstack_repo.stat.isdir)
-
-- name: check if docker manila-csi image exists
-  command: docker images k8scloudprovider/manila-csi-plugin --format '\{\{ json .Tag \}\}'
-  register: docker_manila_csi_image_tag
-
-- name: make the manila-csi image and push it to the local registry
-  shell: |
-    cd /home/centos/
-    source /etc/profile.d/golang.sh
-    # Install the go dependency management tool
-    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-    cd /home/centos/go/src/k8s.io/cloud-provider-openstack
-    make image-manila-csi-plugin
-  when: docker_manila_csi_image_tag.stdout == ""
-
 - name: initialize kubeadm on master
   become: yes
   shell: |
@@ -76,21 +8,31 @@
   args:
     creates: /etc/kubernetes/manifests/kube-apiserver.yaml
 
-- name: create flannel network
+- name: ensure that /home/centos/.kube exists
   become: yes
-  shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+  file:
+    state: directory
+    path: /home/centos/.kube
+    owner: centos
+    group: centos
+    mode: 0775
 
-- name: get kubeconfig.conf from the master node
+- name: install kubeconfig in /home/centos/.kube
   become: yes
-  fetch:
-    src: /etc/kubernetes/admin.conf
-    dest: kubeconfig.conf
-    flat: yes
+  command: install -o centos -g centos -m 0775 /etc/kubernetes/admin.conf /home/centos/.kube/config
 
 - name: replace the master node's internal/host network IP with floating IP
-  connection: local
   replace:
-    path: '{{ playbook_dir }}/kubeconfig.conf'
+    path: /home/centos/.kube/config
     after: 'server:'
     regexp: 'https://[0-9.]+:6443'
     replace: "https://{{ inventory_hostname }}:6443"
+
+- name: get local kubeconfig.conf
+  fetch:
+    src: /home/centos/.kube/config
+    dest: kubeconfig.conf
+    flat: yes
+
+- name: create flannel network
+  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
