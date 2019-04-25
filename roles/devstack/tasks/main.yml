@@ -1,43 +1,49 @@
 ---
 # tasks file for devstack
 - name: Install git
+  become: yes
   yum:
     name: git
     state: latest
-  become: true
+
 - name: Create /opt/stack
+  become: yes
   file: path=/opt/stack
         state=directory
         owner={{ansible_env.USER}}
         group={{ansible_env.USER}}
-  become: true
+
 - name: Clone devstack
-  git: repo=https://git.openstack.org/openstack-dev/devstack
+  git: repo=https://opendev.org/openstack-dev/devstack
        dest={{ansible_env.HOME}}/devstack
        update=no
+
 - name: Install ~/devstack/local.conf
   copy: dest={{ansible_env.HOME}}/devstack/local.conf
         src=local.conf
         mode=0644
         owner={{ansible_env.USER}}
+
 # The CentOS python-setuptools is too old
 # for devstack and it will use its own version
 # of setuptools
 - name: uninstall OS python-setuptools
-  become: true
+  become: yes
   package:
     name: python-setuptools
     state: absent
+
 - name: run stack.sh to deploy manila
   command: ./stack.sh
   args:
     chdir: /home/centos/devstack
     creates: /opt/stack/manila
+
 # But we need a system-wide setuptools for
 # python-manilclient pbr to work so re-install
 # it now that devstack stack.sh has completed
 - name: Re-install OS python-setuptools
-  become: true
+  become: yes
   package:
     name: python-setuptools
     state: present

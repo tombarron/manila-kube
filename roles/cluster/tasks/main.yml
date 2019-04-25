@@ -1,6 +1,5 @@
 - name: Wait for instances to finish booting
   connection: local
-  become: no
   wait_for:
     host="{{ansible_ssh_host|default(inventory_hostname)}}"
     search_regex=OpenSSH
@@ -12,33 +11,30 @@
   setup:
     filter: "ansible_*"
 
-#- name: debug stuff
-#  vars:
-#    msg: |
-#           HOST Variables ("hostvars"):
-#           --------------------------------
-#           {{ hostvars | to_nice_json }}
-#  debug:
-#    msg: "{{ msg.split('\n') }}"
-
 - name: build hosts file
+  become: yes
   lineinfile: dest=/etc/hosts regexp='^{{ hostvars[item].ansible_default_ipv4.address }}.*$' line="{{ hostvars[item].ansible_default_ipv4.address }} {{ hostvars[item].ansible_hostname }} {{ hostvars[item].ansible_nodename }}" state=present
   when: hostvars[item].ansible_default_ipv4.address is defined
   with_items: "{{ groups['cluster'] }}"
 
 - name: disable selinux
+  become: yes
   selinux: state=disabled
 
 - name: disable of selinux - now
+  become: yes
   command: setenforce 0
 
-- name: Ensure net.bridge.bridge-nf-call-iptables is set. See kubeadm
+- name: Ensure net.bridge.bridge-nf-call-iptables is set
+  become: yes
   copy: src=k8s.conf owner=root group=root dest=/etc/sysctl.d/k8s.conf
 
 - name: Run sysctl
+  become: yes
   command: sysctl --system
 
 - name: Add Kubernetes yum repo
+  become: yes
   yum_repository:
     name: kubernetes
     description: Kubernetes kubeadm
@@ -47,6 +43,7 @@
     gpgcheck: yes
 
 - name: install utility programs
+  become: yes
   yum:
     disable_gpg_check: yes
     state: present
@@ -67,6 +64,7 @@
       - kernel-headers
 
 - name: install epel utility programs
+  become: yes
   yum:
     state: present
     disable_gpg_check: yes
@@ -77,6 +75,7 @@
       - device-mapper-persistent-data
 
 - name: remove all old docker packages
+  become: yes
   yum:
     state: removed
     disable_gpg_check: yes
@@ -91,12 +90,15 @@
       - docker-engine
 
 - name: install docker ce yum repo
+  become: yes
   command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
 - name: install docker ce
+  become: yes
   yum: name=docker-ce state=present disable_gpg_check=yes
 
 - name: enable kube services
+  become: yes
   service: name={{ item }} state=started enabled=yes
   with_items:
     - docker
@@ -104,6 +106,7 @@
     - kubelet
 
 - name: add centos to docker group
+  become: yes
   user:
     name: centos
     append: yes
@@ -118,15 +121,18 @@
     dest: /home/centos/crictl.tar.gz
 
 - name: install crictl
+  become: yes
   unarchive:
     src: /home/centos/crictl.tar.gz
     remote_src: yes
     dest: /bin
 
 - name: turn off swap
+  become: yes
   command: swapoff -a
 
 - name: remove swap from /etc/fstab
+  become: yes
   lineinfile:
     path: /etc/fstab
     state: absent

@@ -3,6 +3,7 @@
     state: present
     name: manila-kube-security-group
     description: Security group with ingress to ports 22, 80, 443, 6443
+
 - name: add ssh ingress rule
   os_security_group_rule:
     state: present
@@ -10,6 +11,7 @@
     protocol: tcp
     port_range_min: 22
     port_range_max: 22
+
 - name: add http ingress rule
   os_security_group_rule:
     state: present
@@ -17,6 +19,7 @@
     protocol: tcp
     port_range_min: 80
     port_range_max: 80
+
 - name: add https ingress rule
   os_security_group_rule:
     state: present
@@ -24,6 +27,7 @@
     protocol: tcp
     port_range_min: 443
     port_range_max: 443
+
 - name: add ingress rule to kubernetes secure port
   os_security_group_rule:
     state: present
@@ -31,12 +35,14 @@
     protocol: tcp
     port_range_min: 6443
     port_range_max: 6443
+
 - name: allow icmp on the private cluster network
   os_security_group_rule:
     state: present
     security_group: manila-kube-security-group
     protocol: icmp
     remote_ip_prefix: 192.168.0.0/24
+
 - name: allow unrestricted TCP on the private cluster network
   os_security_group_rule:
     state: present
@@ -45,15 +51,18 @@
     port_range_min: 1
     port_range_max: 65535
     remote_ip_prefix: 192.168.0.0/24
+
 - name: create keypair
   os_keypair:
     state: present
     name: "{{ key_name }}"
     public_key_file: "{{ public_key_file }}"
+
 - name: create private network for the cluster
   os_network:
     state: present
     name: manila-kube-private-net
+
 - name: create private subnet on that network
   os_subnet:
     state: present
@@ -61,12 +70,14 @@
     name: manila-kube-private-subnet
     cidr: 192.168.0.0/24
     gateway_ip: 192.168.0.1
+
 - name: create router for the private network
   os_router:
     state: present
     name: manila-kube-private-router
     interfaces: manila-kube-private-subnet
     network: 38.145.32.0/22
+
 - name: launch master node
   os_server:
     name: master
@@ -79,15 +90,18 @@
     key_name: "{{ key_name }}"
     network: manila-kube-private-net
   register: master
+
 - name: add the master to our ansible inventory
   add_host: hostname="{{ master.server.public_v4 }}"
             groups=cluster,master
             ansible_ssh_private_key_file="{{private_key_file}}"
             ansible_ssh_user=centos
+
 - name: Create local login script
   template: src=login-master.sh.j2
             dest=./login-master.sh
             mode=0755
+
 - name: launch worker0
   os_server:
     name: worker0
@@ -100,15 +114,18 @@
     key_name: "{{ key_name }}"
     network: manila-kube-private-net
   register: worker0
+
 - name: add worker0 to our ansible inventory
   add_host: hostname="{{ worker0.server.public_v4 }}"
             groups=cluster,devstack,workers
             ansible_ssh_private_key_file="{{private_key_file}}"
             ansible_ssh_user=centos
+
 - name: Create local login script
   template: src=login-worker0.sh.j2
             dest=./login-worker0.sh
             mode=0755
+
 - name: launch worker1
   os_server:
     name: worker1
@@ -121,15 +138,18 @@
     key_name: "{{ key_name }}"
     network: manila-kube-private-net
   register: worker1
+
 - name: add worker1 to our ansible inventory
   add_host: hostname="{{ worker1.server.public_v4 }}"
             groups=cluster,workers
             ansible_ssh_private_key_file="{{private_key_file}}"
             ansible_ssh_user=centos
+
 - name: Create local login script
   template: src=login-worker1.sh.j2
             dest=./login-worker1.sh
             mode=0755
+
 - name: launch worker2
   os_server:
     name: worker2
@@ -142,15 +162,18 @@
     key_name: "{{ key_name }}"
     network: manila-kube-private-net
   register: worker2
+
 - name: add worker2 our ansible inventory
   add_host: hostname="{{ worker2.server.public_v4 }}"
             groups=cluster,workers
             ansible_ssh_private_key_file="{{ private_key_file }}"
             ansible_ssh_user=centos
+
 - name: Create local login script
   template: src=login-worker2.sh.j2
             dest=login-worker2.sh
             mode=0755
+
 - name: Print our ansible inventory groups
   vars:
     msg: |
