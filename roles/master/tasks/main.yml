@@ -53,9 +53,8 @@
   when: not (cloud_provider_openstack_repo.stat.exists and cloud_provider_openstack_repo.stat.isdir)
 
 - name: check if docker manila-csi image exists
-  command: docker image inspect k8scloudprovider/manila-csi-plugin
-  register: docker_manila_csi_image_exists
-  ignore_errors: yes
+  command: docker images k8scloudprovider/manila-csi-plugin --format '\{\{ json .Tag \}\}'
+  register: docker_manila_csi_image_tag
 
 - name: make the manila-csi image and push it to the local registry
   shell: |
@@ -65,7 +64,7 @@
     curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
     cd /home/centos/go/src/k8s.io/cloud-provider-openstack
     make image-manila-csi-plugin
-  when: docker_manila_csi_image_exists is failed
+  when: docker_manila_csi_image_tag.stdout == ""
 
 - name: initialize kubeadm on master
   become: yes
