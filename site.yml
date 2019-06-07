@@ -20,12 +20,14 @@
     - "global_vars.yml"
   roles:
     - master
+    - common
 
 - hosts: workers
   vars_files:
     - "global_vars.yml"
   roles:
     - workers
+    - common
 
 - hosts: master
   vars_files:

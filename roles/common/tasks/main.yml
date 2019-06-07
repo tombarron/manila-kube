@@ -1,0 +1,14 @@
+- name: set up docker to use insecure local registry
+  become: yes
+  copy: dest=/etc/docker/daemon.json
+        src=daemon.json
+        mode=0644
+        owner=root
+
+- name: reload daemons
+  become: yes
+  command: systemctl daemon-reload
+
+- name: restart docker
+  become: yes
+  command: systemctl restart docker

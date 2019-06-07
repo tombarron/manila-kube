@@ -36,3 +36,21 @@
 
 - name: create flannel network
   command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+
+- name: set up host side path for insecure registry persistence
+  file:
+    state: directory
+    path: /var/lib/local-registry/registry
+    mode: 0775
+  become: yes
+
+# I'm not getting this to work reliably
+#- name: check if local registry is already running
+#  command: docker inspect --format '{{ '{{' }} json .State.Running {{ #  '}}' }}' local-registry
+#  ignore_errors: yes
+#  register: docker_local_registry_is_running
+
+- name: run local insecure image registry
+  command: docker run -d -p5000:5000 --restart=always --name local-registry -v /var/lib/local-registry/registry:/var/lib/registry:Z registry:2
+  ignore_errors: yes  # just a hack because the above check isn't working correctly
+##  when: docker_local_registry_is_running != 'true'
