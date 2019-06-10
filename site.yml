@@ -29,13 +29,13 @@
     - workers
     - common
 
+- hosts: devstack
+  roles:
+    - devstack
+
 - hosts: master
   vars_files:
     - "global_vars.yml"
   roles:
     - gantsign.golang
     - csi
-
-- hosts: devstack
-  roles:
-    - devstack
