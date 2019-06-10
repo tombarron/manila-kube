@@ -1,0 +1,8 @@
+- name: check if devstack has been attempted on this node
+  stat:
+    path: /opt/stack
+  register: opt_stack
+
+- name: run plays to install the clients
+  include: install_clients.yaml
+  when: not opt_stack.stat.exists

@@ -39,11 +39,28 @@
     chdir: /home/centos/devstack
     creates: /opt/stack/manila
 
-# But we need a system-wide setuptools for
-# python-manilclient pbr to work so re-install
-# it now that devstack stack.sh has completed
-- name: Re-install OS python-setuptools
-  become: yes
-  package:
-    name: python-setuptools
-    state: present
+- name: generate admin credentials
+  shell: |
+    cd /home/centos/devstack
+    export PATH=/usr/sbin:$PATH
+    source ./openrc admin admin
+    env | awk '/^OS_/{printf "export %s\n", $0}' > /home/centos/adminrc
+
+- name: generate demo credentials
+  shell: |
+    cd /home/centos/devstack
+    export PATH=/usr/sbin:$PATH
+    source ./openrc demo demo
+    env | awk '/^OS_/{printf "export %s\n", $0}' > /home/centos/demorc
+
+- name: get adminrc
+  fetch:
+    src: /home/centos/adminrc
+    dest: adminrc
+    flat: yes
+
+- name: get demorc
+  fetch:
+    src: /home/centos/demorc
+    dest: demorc
+    flat: yes

@@ -43,6 +43,12 @@
   tags:
   - install_manila
 
+- hosts: cluster
+  roles:
+    - devstack_common
+  tags:
+  - openstack_clients
+
 - hosts: master
   vars_files:
     - "global_vars.yml"

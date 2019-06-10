@@ -1,0 +1,29 @@
+- name: yum install centos-release-openstack-stein
+  become: yes
+  yum:
+    name: centos-release-openstack-stein
+    state: latest
+
+- name: yum install python-manilaclient
+  become: yes
+  yum:
+    name: python-manilaclient
+    state: latest
+
+- name: yum install python-openstackclient
+  become: yes
+  yum:
+    name: python-openstackclient
+    state: latest
+
+- name: upload adminrc client credentials
+  copy:
+    src: ./adminrc
+    dest: /home/centos/adminrc
+    mode: '0440'
+
+- name: upload demorc client credentials
+  copy:
+    src: ./demorc
+    dest: /home/centos/demorc
+    mode: '0440'
