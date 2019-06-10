@@ -25,218 +25,157 @@
     path: /home/centos/go/src
     state: directory
 
-- name: check if docker cephcsi/cephfsplugin image exists
-  command: docker images quay.io/cephcsi/cephfsplugin --format '\{\{ json .Tag \}\}'
-  register: docker_cephfs_image_tag
+## Partner NFS CSI plugin
+- name: get the k8s-csi/csi-driver-nfs repository
+  git:
+    repo: 'https://github.com/kubernetes-csi/csi-driver-nfs.git'
+    dest: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs
+    update: no
 
-- name: make the cephcsi/cephfsplugin image and push it to the local registry
+- name: check if docker nfsplugin image exists
+  command: docker images -q nfsplugin
+  register: docker_nfsplugin_image_id
+
+- name: make the nfsplugin image and push it to the local registry
   shell: |
     source /etc/profile.d/golang.sh
-    go get -d github.com/ceph/ceph-csi
-    cd /home/centos/go/src/github.com/ceph/ceph-csi
-    git checkout csi-v1.0
-    make image-cephfsplugin
-  when: docker_cephfs_image_tag.stdout == ""
+    cd /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs
+    make container
+    id=$(docker images -q nfsplugin)
+    docker tag $id master.rdocloud:5000/nfsplugin
+    docker push master.rdocloud:5000/nfsplugin
+  when: docker_nfsplugin_image_id.stdout == ''
+
+## DaemonSet for csi-nodeplugin-nfsplugin
+
+- name: deploy RBAC for csi-nodeplugin-nfsplugin
+  command: kubectl apply -f csi-nodeplugin-rbac.yaml
+  args:
+    chdir: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs/deploy/kubernetes
+
+- name: adjust csi-nodeplugin-nfsplugin.yaml to use current registrar image
+  replace:
+    path: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs/deploy/kubernetes/csi-nodeplugin-nfsplugin.yaml
+    regexp: "image: quay.io/k8scsi/csi-node-driver-registrar:v1.0.2"
+    replace: "image: quay.io/k8scsi/csi-node-driver-registrar:v1.1.0"
+
+- name: adjust csi-nodeplugin-nfsplugin.yaml to use local docker nfsplugin image
+  replace:
+    path: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs/deploy/kubernetes/csi-nodeplugin-nfsplugin.yaml
+    regexp: "image: quay.io/k8scsi/nfsplugin:v1.0.0"
+    replace: "image: master.rdocloud:5000/nfsplugin"
+
+- name: deploy csi-nodeplugin-nfsplugin DaemonSet
+  command: kubectl apply -f csi-nodeplugin-nfsplugin.yaml
+  args:
+    chdir: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs/deploy/kubernetes
+
+
+## Manila CSI plugin
 
 - name: get the openstack-cloud-provider repository
   git:
-    repo: 'https://github.com/kubernetes/cloud-provider-openstack'
+    # repo: 'https://github.com/kubernetes/cloud-provider-openstack'
+    repo: 'https://github.com/gman0/cloud-provider-openstack'
+    version: 'csimanila-snapshots-nfs'
     dest: /home/centos/go/src/k8s.io/cloud-provider-openstack
     update: no
 
 - name: check if docker manila-csi-plugin image exists
-  command: docker images k8scloudprovider/manila-csi-plugin --format '\{\{ json .Tag \}\}'
-  register: docker_manila_csi_image_tag
+  command: docker images -q k8scloudprovider/manila-csi-plugin
+  register: docker_manila_csi_image_id
 
 - name: make the manila-csi image and push it to the local registry
   shell: |
-    cd /home/centos/
     source /etc/profile.d/golang.sh
+    cd /home/centos/
     # Install the go dependency management tool
     curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
     cd /home/centos/go/src/k8s.io/cloud-provider-openstack
     make image-manila-csi-plugin
-  when: docker_manila_csi_image_tag.stdout == ""
-
-##  With Manila CSI we don't need the cephfs-csi-provisioner sidecar
-
-#- name: check if cephfs-csi-provisioner RoleBinding exists
-#  command: kubectl get RoleBinding cephfs-csi-provisioner-role-cfg
-#  register: cephfs_csi_provisioner_role_binding_found
-#  ignore_errors: yes
-
-#- name: deploy RBAC for cephfs_csi-provisioner sidecar containers
-#  command: kubectl create -f csi-provisioner-rbac.yaml
-#  args:
-#    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-#  when: cephfs_csi_provisioner_role_binding_found is failed
-
-#- name: check if csi-cephfsplugin-provisioner StatefulSet exists
-#  command: kubectl get StatefulSet csi-cephfsplugin-provisioner
-#  register: csi_cephfsplugin_provisioner_statefulset_found
-#  ignore_errors: yes
-
-#- name: deploy csi-cephfsplugin-provisioner StatefulSet
-#  command: kubectl create -f csi-cephfsplugin-provisioner.yaml
-#  args:
-#    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-#  when: csi_cephfsplugin_provisioner_statefulset_found is failed
-
-## StatefulSet for cephfs-csi-attacher sidecar
-
-- name: check if cephfs-csi-attacher-role ClusterRoleBinding exists
-  command: kubectl get ClusterRoleBinding cephfs-csi-attacher-role
-  register: cephfs_csi_attacher_role_cluster_role_binding_found
-  ignore_errors: yes
-
-- name: deploy RBAC for cephfs-csi-attacher-role
-  command: kubectl create -f csi-attacher-rbac.yaml
-  args:
-    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-  when: cephfs_csi_attacher_role_cluster_role_binding_found is failed
-
-- name: check if csi-cephfsplugin-attacher sidecar StatefulSet exists
-  command: kubectl get StatefulSet csi-cephfsplugin-attacher
-  register: csi_cephfsplugin_attacher_statefulset_found
-  ignore_errors: yes
-
-- name: create csi-cephfsplugin-attacher sidecar StatefulSet
-  command: kubectl create -f csi-cephfsplugin-attacher.yaml
-  args:
-    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-  when: csi_cephfsplugin_attacher_statefulset_found is failed
-
-## DaemonSet for cephfs-csi-nodeplugin sidecar
-
-- name: check if cephfs-csi-nodeplugin ClusterRoleBinding exists
-  command: kubectl get ClusterRoleBinding cephfs-csi-nodeplugin
-  register: csi_nodeplugin_cluster_role_binding_found
-  ignore_errors: yes
-
-- name: deploy RBAC for csi-nodeplugin sidecar containers
-  command: kubectl create -f csi-nodeplugin-rbac.yaml
-  args:
-    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-  when: csi_nodeplugin_cluster_role_binding_found is failed
-
-- name: check if csi-cephfsplugin DaemonSet exists
-  command: kubectl get DaemonSet csi-cephfsplugin
-  register: csi_cephfsplugin_daemonset_found
-  ignore_errors: yes
-
-- name: deploy csi-cephfsplugin DaemonSet
-  command: kubectl create -f csi-cephfsplugin.yaml
-  args:
-    chdir: /home/centos/go/src/github.com/ceph/ceph-csi/deploy/cephfs/kubernetes
-  when: csi_cephfsplugin_daemonset_found is failed
-
-## StatefulSet for Manila CSI Provisioner
-
-- name: check if manila-csi-provisioner RoleBinding exists
-  command: kubectl get RoleBinding manila-csi-provisioner-role-cfg
-  register: manila_csi_provisioner_role_binding_found
-  ignore_errors: yes
-
-- name: deploy RBAC for manila-csi-provisioner
-  command: kubectl create -f csi-provisioner-rbac.yaml
-  args:
-    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: manila_csi_provisioner_role_binding_found is failed
-
-- name: check if manila-csi-provisioner StatefulSet exists
-  command: kubectl get StatefulSet csi-provisioner-manilaplugin
-  register: manila_provisioner_statefulset_found
-  ignore_errors: yes
-
-- name: create manila-csi-provisioner stateful set
-  command: kubectl create -f csi-provisioner-manilaplugin.yaml
-  args:
-    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: manila_provisioner_statefulset_found is failed
-
-## StatefulSet for Manila CSI attacher
-
-- name: check if manila-csi-attacher ClusterRoleBinding exists
-  command: kubectl get ClusterRoleBinding cephfs-csi-attacher-role
-  register: manila_cephfs_csi_attacher_role_found
-  ignore_errors: yes
-
-- name: deploy RBAC for manila-csi-provisioner
-  command: kubectl create -f csi-attacher-rbac.yaml
-  args:
-    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: manila_cephfs_csi_attacher_role_found is failed
-
-- name: check if csi-attacher-manilaplugin StatefulSet exists
-  command: kubectl get StatefulSet csi-attacher-manilaplugin
-  register: csi_attacher_manilaplugin_statefulset_found
-  ignore_errors: yes
-
-- name: create csi-attacher-manilaplugin StatefulSet
-  command: kubectl create -f csi-attacher-manilaplugin.yaml
-  args:
-    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: csi_attacher_manilaplugin_statefulset_found is failed
+    id=$(docker images -q k8scloudprovider/manila-csi-plugin)
+    docker tag $id master.rdocloud:5000/k8scloudprovider/manila-csi-plugin
+    docker push master.rdocloud:5000/k8scloudprovider/manila-csi-plugin
+  when: docker_manila_csi_image_id.stdout == ''
 
 ## Manila CSI nodeplugin daemonset
 
-- name: check if manila-csi-nodeplugin ClusterRoleBinding exists
-  command: kubectl get ClusterRoleBinding manila-csi-nodeplugin
-  register: manila_csi_nodeplugin_clusterrolebinding_found
-  ignore_errors: yes
-
 - name: deploy RBAC for manila-csi-nodeplugin
-  command: kubectl create -f csi-nodeplugin-rbac.yaml
+  command: kubectl apply -f csi-nodeplugin-rbac.yaml
   args:
     chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: manila_csi_nodeplugin_clusterrolebinding_found is failed
 
-- name: check if csi-nodeplugin-manilaplugin-cephfs.yaml exists
-  stat:
-    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-cephfs.yaml
-  register: nodeplugin_cephfs_yaml
-
-- name: copy csi-nodeplugin-manilaplugin.yaml to csi-nodeplugin-manilaplugin-cephfs.yaml
-  command: cp csi-nodeplugin-manilaplugin.yaml csi-nodeplugin-manilaplugin-cephfs.yaml
+- name: copy csi-nodeplugin-manilaplugin.yaml to csi-nodeplugin-manilaplugin-nfs.yaml
+  command: cp csi-nodeplugin-manilaplugin.yaml csi-nodeplugin-manilaplugin-nfs.yaml
   args:
     chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: not nodeplugin_cephfs_yaml.stat.exists
 
 - name: fix volumeMounts fwd-plugin-dir
   replace:
-    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-cephfs.yaml
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-nfs.yaml
     after: '- name: fwd-plugin-dir'
     regexp: 'mountPath: >>>Path.*'
-    replace: 'mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi'
+    replace: 'mountPath: /plugin'
 
 - name: fix volumes hostPath fwd-plugin-dir
   replace:
-  path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-cephfs.yaml
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-nfs.yaml
     after: 'hostPath:'
     regexp: 'path: /var/lib/kubelet/plugins/>>>The other CSI plugin<<<'
-    replace: 'path: /var/lib/kubelet/plugins/cephfs.csi.ceph.com'
+    replace: 'path: /var/lib/kubelet/plugins/csi-nfsplugin'
 
 - name: fix MANILA_SHARE_PROTO
   replace:
-    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-cephfs.yaml
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-nfs.yaml
     after: '- name: MANILA_SHARE_PROTO'
     regexp: 'value: >>>Share protocol goes here<<<$'
-    replace: 'value: cephfs'
+    replace: 'value: NFS'
 
 - name: fix FWD_CSI_ENDPOINT
   replace:
-    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-cephfs.yaml
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-nfs.yaml
     after: '- name: FWD_CSI_ENDPOINT'
     regexp: "value: unix://>>>Absolute path to proxy'd plugin .sock file<<<"
-    replace: 'value: unix:///csi/csi.sock'
+    replace: 'value: unix:///plugin/csi.sock'
 
-- name: check if csi-nodeplugin-manilaplugin daemonset exists
-  command: kubectl get DaemonSet csi-nodeplugin-manilaplugin
-  register: csi_nodeplugin_manilaplugin_daemonset_found
-  ignore_errors: yes
+- name: adjust csi-nodeplugin-manilaplugin-nfs.yaml to use local manilaplugin image
+  replace:
+    path: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin/csi-nodeplugin-manilaplugin-nfs.yaml
+    regexp: "image: manila-csi-plugin"
+    replace: "image: master.rdocloud:5000/k8scloudprovider/manila-csi-plugin"
 
-- name: create csi-nodeplugin-manilaplugin daemonSet
-  command: kubectl create -f csi-nodeplugin-manilaplugin-cephfs.yaml
+- name: deploy csi-nodeplugin-manilaaplugin daemonSet
+  command: kubectl apply -f csi-nodeplugin-manilaplugin-nfs.yaml
   args:
     chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
-  when: csi_nodeplugin_manilaplugin_daemonset_found is failed
+
+## StatefulSet for Manila CSI Provisioner
+
+- name: deploy RBAC for manila-csi-provisioner
+  command: kubectl apply -f csi-provisioner-rbac.yaml
+  args:
+    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
+
+- name: deploy manila-csi-provisioner stateful set
+  command: kubectl apply -f csi-provisioner-manilaplugin.yaml
+  args:
+    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
+
+## StatefulSet for Manila CSI attacher
+
+- name: deploy RBAC for manila-csi-attacher
+  command: kubectl apply -f csi-attacher-rbac.yaml
+  args:
+    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
+
+- name: deploy csi-attacher-manilaplugin StatefulSet
+  command: kubectl apply -f csi-attacher-manilaplugin.yaml
+  args:
+    chdir: /home/centos/go/src/k8s.io/cloud-provider-openstack/manifests/manila-csi-plugin
+
+- name: generate csi-manila-nfs-secrets
+  shell: |
+    source /home/centos/demorc
+    /home/centos/go/src/k8s.io/cloud-provider-openstack/examples/manila-provisioner/generate-secrets.sh -n csi-manila-nfs-secrets |\
+    grep -v ': ""' > /home/centos/csi-manila-nfs-secrets.yaml
+    kubectl apply -f /home/centos/csi-manila-nfs-secrets.yaml

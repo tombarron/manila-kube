@@ -1,3 +1,8 @@
 #!/bin/bash
 
-ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -X -i {{ private_key_file }} centos@{{ master.server.public_v4 }}
+ssh -q -o UserKnownHostsFile=/dev/null \
+  -o StrictHostKeyChecking=no \
+  -X \
+  -i {{ private_key_file }} \
+  centos@{{ master.server.public_v4 }} \
+  $*
