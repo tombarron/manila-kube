@@ -7,6 +7,8 @@
     - keys.yml
   roles:
     - openstack_infra
+  tags:
+  - provision_hosts
 
 - hosts: cluster
   gather_facts: false
@@ -14,6 +16,8 @@
     - "global_vars.yml"
   roles:
     - cluster
+  tags:
+  - prepare_cluster_hosts
 
 - hosts: master
   vars_files:
@@ -21,6 +25,8 @@
   roles:
     - master
     - common
+  tags:
+  - setup_master_host
 
 - hosts: workers
   vars_files:
@@ -28,10 +34,14 @@
   roles:
     - workers
     - common
+  tags:
+  - setup_worker_hosts
 
 - hosts: devstack
   roles:
     - devstack
+  tags:
+  - install_manila
 
 - hosts: master
   vars_files:
@@ -39,3 +49,5 @@
   roles:
     - gantsign.golang
     - csi
+  tags:
+  - setup_csi

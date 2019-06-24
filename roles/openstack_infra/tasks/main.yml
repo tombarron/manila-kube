@@ -134,7 +134,7 @@
 
 - name: add worker0 to our ansible inventory
   add_host: hostname="{{ worker0.server.public_v4 }}"
-            groups=cluster,devstack,workers
+            groups=cluster,workers,devstack
             ansible_ssh_private_key_file="{{private_key_file}}"
             ansible_ssh_user=centos
 
@@ -207,11 +207,7 @@
             dest=login-worker2.sh
             mode=0755
 
-- name: Print our ansible inventory groups
-  vars:
-    msg: |
-       GROUPS Variables ("groups"):
-           --------------------------------
-           {{ groups | to_nice_json }}
-  debug:
-    msg: "{{ msg.split('\n') }}"
+- name: persist dynamic inventory to yml file
+  template: src=inventory.yml.j2
+            dest=inventory.yml
+            mode=0644
