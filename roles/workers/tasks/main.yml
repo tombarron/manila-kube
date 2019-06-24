@@ -1,5 +1,17 @@
 - name: join with master
   become: yes
-  command: kubeadm join --ignore-preflight-errors=cri --discovery-token-unsafe-skip-ca-verification --token={{ kubernetes_token }} {{ hostvars[groups['master'][0]].ansible_default_ipv4.address }}:6443
+  command: kubeadm join --ignore-preflight-errors=cri --discovery-token-unsafe-skip-ca-verification --token={{ kubernetes_token }} master:6443
   args:
     creates: /etc/kubernetes/bootstrap-kubelet.conf
+
+- name: ensure that /home/centos/.kube exists
+  file:
+    state: directory
+    path: /home/centos/.kube
+    mode: 0775
+
+- name: install kubeconfig in /home/centos/.kube
+  copy:
+    src: ./kubeconfig.conf
+    dest: /home/centos/.kube/config
+    mode: '0640'
