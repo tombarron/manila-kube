@@ -1,16 +1,18 @@
-======================
-RDOCloud-kubeup-manila
-======================
+=======================
+manila-kube on RDOCloud
+=======================
 
 This playbook creates a kubernetes cluster
 in the RDOCloud and sets up
 a minimal devstack environment there with the CephNFS backend.
 
+There it deploys Robert Vaskek's manila-csi plugin for cloud_provider_openstack_.
+
 The playbook borrows heavily from Luis Pabon's vagrant with
 playbook for setting up the same sort of k8s cluster
 locally with libvirt: git@github.com:lpabon/kubeup.git.
 
-The playbook has been tested thus far on Fedora 29.
+The playbook has been tested thus far on Fedora 29 and 30.
 
 ::
 
@@ -115,3 +117,6 @@ $ ansible-playbook cleanup.yml
 
 This playbook will remove the created instances, the security group
 and the network resources that were allocated.
+
+.. _cloud_provider_openstack: 
+   https://github.com/kubernetes/cloud-provider-openstack/
