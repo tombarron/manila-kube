@@ -85,7 +85,7 @@
     state: present
     wait: yes
     auto_ip: yes
-    image: 'CentOS-7-x86_64-GenericCloud-1708'
+    image: 'CentOS-7-x86_64-GenericCloud-1804_02'
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
@@ -117,7 +117,7 @@
     state: present
     wait: yes
     auto_ip: yes
-    image: 'CentOS-7-x86_64-GenericCloud-1708'
+    image: 'CentOS-7-x86_64-GenericCloud-1804_02'
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
@@ -149,7 +149,7 @@
     state: present
     wait: yes
     auto_ip: yes
-    image: 'CentOS-7-x86_64-GenericCloud-1708'
+    image: 'CentOS-7-x86_64-GenericCloud-1804_02'
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"
@@ -181,7 +181,7 @@
     state: present
     wait: yes
     auto_ip: yes
-    image: 'CentOS-7-x86_64-GenericCloud-1708'
+    image: 'CentOS-7-x86_64-GenericCloud-1804_02'
     security_groups: manila-kube-security-group
     flavor: m1.large
     key_name: "{{ key_name }}"

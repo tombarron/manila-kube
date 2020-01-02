@@ -65,6 +65,12 @@
     regexp: "image: quay.io/k8scsi/nfsplugin:v1.0.0"
     replace: "image: master.rdocloud:5000/nfsplugin"
 
+- name: change api version for csi-nodeplugin-nfsplugin.yaml from apps/v1beta2 to apps/v1
+  replace:
+    path: /home/centos/go/src/github.com/kubernetes-csi/csi-driver-nfs/deploy/kubernetes/csi-nodeplugin-nfsplugin.yaml
+    regexp: "apiVersion: apps/v1beta2"
+    replace: "apiVersion: apps/v1"
+
 - name: deploy csi-nodeplugin-nfsplugin DaemonSet
   command: kubectl apply -f csi-nodeplugin-nfsplugin.yaml
   args:

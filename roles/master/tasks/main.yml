@@ -35,7 +35,7 @@
     flat: yes
 
 - name: create flannel network
-  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 - name: set up host side path for insecure registry persistence
   file:

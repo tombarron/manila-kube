@@ -17,6 +17,7 @@
   git: repo=https://opendev.org/openstack-dev/devstack
        dest={{ansible_env.HOME}}/devstack
        update=no
+       version=stable/train
 
 - name: Install ~/devstack/local.conf
   copy: dest={{ansible_env.HOME}}/devstack/local.conf
